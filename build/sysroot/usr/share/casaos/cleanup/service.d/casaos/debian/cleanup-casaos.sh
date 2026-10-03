@@ -64,15 +64,15 @@ Detecting_CasaOS() {
 Uninstall_Container() {
     if [[ ${UNINSTALL_ALL_CONTAINER} == true && "$(docker ps -aq)" != "" ]]; then
         Show 2 "Start deleting containers."
-        docker stop "$(docker ps -aq)" || Show 1 "Failed to stop all containers."
-        docker rm "$(docker ps -aq)" || Show 1 "Failed to delete all containers."
+        docker ps -aq | xargs -r docker stop || Show 1 "Failed to stop all containers."
+        docker ps -aq | xargs -r docker rm || Show 1 "Failed to delete all containers."
     fi
 }
 
 Remove_Images() {
     if [[ ${REMOVE_IMAGES} == "all" && "$(docker images -q)" != "" ]]; then
         Show 2 "Start deleting all images."
-        docker rmi "$(docker images -q)" || Show 1 "Failed to delete all images."
+        docker images -q | sort -u | xargs -r docker rmi -f || Show 1 "Failed to delete all images."
     elif [[ ${REMOVE_IMAGES} == "unuse" && "$(docker images -q)" != "" ]]; then
         Show 2 "Start deleting unuse images."
         docker image prune -af || Show 1 "Failed to delete unuse images."

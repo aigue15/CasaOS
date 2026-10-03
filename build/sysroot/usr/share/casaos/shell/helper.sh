@@ -46,7 +46,7 @@ CatNetCardState() {
 #获取docker根目录
 GetDockerRootDir() {
   if hash docker 2>/dev/null; then
-    docker info | grep 'Docker Root Dir' | awk -F ':' '{print $2}'
+    docker info --format '{{.DockerRootDir}}'
   else
     echo ""
   fi
@@ -247,33 +247,38 @@ PackageDocker() {
   docker="/mnt/casa_docker"
   #判断目录docker存在不存在则创建,存在检查是否为空
 
-  if [ ! -d "$docker" ]; then
-    mkdir ${docker}
+  if [ -d "$docker" ] && [ -n "$(ls -A "$docker")" ]; then
+    mv "$docker" "${docker}_bak.$(date +%s)"
   fi
-
-  if [ "$(ls -A $docker)" = "" ]; then
-    echo "$docker count is 0"
-  else
-    mkdir ${docker}_bak
-    mv -r ${docker} ${docker}_bak
-  fi
+  mkdir -p "$docker"
 
   daemon="/etc/docker/daemon.json"
+  root_dir="$(GetDockerRootDir)"
+  root_dir="${root_dir:-/var/lib/docker}"
   #1创建img文件在挂载的目录
-  fallocate -l $2 $image
+  fallocate -l "$2" "$image"
   #2初始化img文件
-  mkfs -t ext4 $image
+  mkfs -t ext4 "$image"
   #3挂载img文件
-  sudo mount -o loop $image $docker
-  #4给移动/var/lib/docker数据到img挂载的目录
+  sudo mount -o loop "$image" "$docker"
+  #4给移动docker数据到img挂载的目录
   systemctl stop docker.socket
   systemctl stop docker
-  cp -r /var/lib/docker/* ${docker}/
-  #5在/etc/docker写入daemon.json(需要检查)
-  if [ -d "$daemon" ]; then
-    mv -r $daemon ${daemon}.bak
+  cp -a "$root_dir"/. "$docker"/
+  #5在/etc/docker写入daemon.json, 保留已有配置
+  mkdir -p /etc/docker
+  if [ -s "$daemon" ]; then
+    cp "$daemon" "${daemon}.bak"
+    if hash jq 2>/dev/null; then
+      jq --arg root "$docker" '. + {"data-root": $root}' "${daemon}.bak" >"$daemon"
+    elif hash python3 2>/dev/null; then
+      python3 -c 'import json,sys; c=json.load(open(sys.argv[1])); c["data-root"]=sys.argv[2]; json.dump(c,open(sys.argv[3],"w"),indent=2)' "${daemon}.bak" "$docker" "$daemon"
+    else
+      echo "{\"data-root\": \"$docker\"}" >"$daemon"
+    fi
+  else
+    echo "{\"data-root\": \"$docker\"}" >"$daemon"
   fi
-  echo "{\"data-root\": \"$docker\"}" >$daemon
   #删除老数据腾出空间
   #rm -fr /var/lib/docker
   systemctl start docker.socket
@@ -284,11 +289,11 @@ DockerImgMove() {
   image=$1
   systemctl stop docker.socket
   systemctl stop docker
-  sudo umount -f $image
+  sudo umount -f "$image"
 }
 
 GetDockerDataRoot() {
-  docker info | grep "Docker Root Dir:"
+  echo "Docker Root Dir: $(docker info --format '{{.DockerRootDir}}')"
 }
 
 SetLink() {
