@@ -1,5 +1,4 @@
-# This is an example .goreleaser.yml file with some sensible defaults.
-# Make sure to check the documentation at https://goreleaser.com
+version: 2
 project_name: casaos
 before:
   hooks:
@@ -149,7 +148,7 @@ archives:
   - name_template: >-
       {{ .Os }}-{{- if eq .Arch "arm" }}arm-7{{- else }}{{ .Arch }}{{- end }}-{{ .ProjectName }}-v{{ .Version }}
     id: casaos
-    builds:
+    ids:
       - casaos-amd64
       - casaos-arm64
       - casaos-arm-7
@@ -159,7 +158,7 @@ archives:
   - name_template: >-
       {{ .Os }}-{{- if eq .Arch "arm" }}arm-7{{- else }}{{ .Arch }}{{- end }}-{{ .ProjectName }}-migration-tool-v{{ .Version }}
     id: casaos-migration-tool
-    builds:
+    ids:
       - casaos-migration-tool-amd64
       - casaos-migration-tool-arm64
       - casaos-migration-tool-arm-7
@@ -169,7 +168,7 @@ archives:
 checksum:
   name_template: "checksums.txt"
 snapshot:
-  name_template: "{{ incpatch .Version }}"
+  version_template: "{{ incpatch .Version }}"
 changelog:
   sort: asc
   filters:
@@ -185,9 +184,6 @@ changelog:
 #   mode: replace
 #   name_template: "v{{ .Version }}"
 release:
-  github:
-    owner: IceWhaleTech
-    name: CasaOS
   draft: true
   prerelease: auto
   mode: replace

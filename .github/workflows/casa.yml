@@ -30,7 +30,7 @@ jobs:
       fail-fast: false
       matrix:
         go_version:
-          - 1.17.1
+          - 1.27.x
     runs-on: ubuntu-latest
     steps:
 
@@ -40,7 +40,7 @@ jobs:
       #        env:
       #          GITHUB_TOKEN: ${{ github.token }}
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           submodules: true
@@ -73,9 +73,9 @@ jobs:
 
 
       - name: Use Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v7
         with:
-          node-version: '14'
+          node-version: '22'
           
       - name: Build frontend with nodejs and yarn
         run: |
@@ -88,9 +88,9 @@ jobs:
         run: pwd
 
       - name: Build with xgo
-        uses: crazy-max/ghaction-xgo@v1
+        uses: crazy-max/ghaction-xgo@v4
         with:
-          xgo_version: v0.7.5
+          xgo_version: latest
           go_version: ${{ matrix.go_version }}
           dest: build
           prefix: casa
@@ -113,25 +113,24 @@ jobs:
           wget $PACK_SH_URL
           chmod +x $PACK_SH
           ./$PACK_SH
-          echo "::set-output name=status::success"
+          echo "status=success" >> "$GITHUB_OUTPUT"
       - name: list work
         run: ls
 
 
       - name: Update release
-        uses: meeDamian/github-release@2.0
+        uses: softprops/action-gh-release@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          files: >
+          files: |
             linux-amd64-casaos.tar.gz
             linux-arm64-casaos.tar.gz
             linux-arm-7-casaos.tar.gz
-          tag: v${{ env.VERSION }}
+          tag_name: v${{ env.VERSION }}
           body: >
             ${{ env.BODY }}
           name: v${{ env.VERSION }}
-          gzip: false
-          allow_override: false
+          overwrite_files: false
           prerelease: true
 #      - name: Upload linux-amd64-casaos.tar.gz
 #        id: upload_assets_amd64
