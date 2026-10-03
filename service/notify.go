@@ -6,6 +6,7 @@ import (
 	json2 "encoding/json"
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/IceWhaleTech/CasaOS-Common/utils/logger"
@@ -15,7 +16,6 @@ import (
 	"github.com/IceWhaleTech/CasaOS/service/model"
 	"github.com/IceWhaleTech/CasaOS/types"
 	"go.uber.org/zap"
-	"golang.org/x/sync/syncmap"
 
 	socketio "github.com/googollee/go-socket.io"
 	"github.com/gorilla/websocket"
@@ -37,12 +37,12 @@ type NotifyServer interface {
 	//SendInstallAppBySocket(app notifyCommon.Application)
 	SendNotify(name string, message map[string]interface{})
 	SettingSystemTempData(message map[string]interface{})
-	GetSystemTempMap() syncmap.Map
+	GetSystemTempMap() *sync.Map
 }
 
 type notifyServer struct {
 	db            *gorm.DB
-	SystemTempMap syncmap.Map //[string]interface{}
+	SystemTempMap sync.Map //[string]interface{}
 }
 
 func (i *notifyServer) SettingSystemTempData(message map[string]interface{}) {
@@ -241,7 +241,7 @@ func (i *notifyServer) SSR() {
 	fmt.Println(server)
 }
 
-func (i notifyServer) GetList(c int) (list []model.AppNotify) {
+func (i *notifyServer) GetList(c int) (list []model.AppNotify) {
 	i.db.Where("class = ?", c).Where(i.db.Where("state = ?", types.NOTIFY_DYNAMICE).Or("state = ?", types.NOTIFY_UNREAD)).Find(&list)
 	return
 }
@@ -342,10 +342,10 @@ func SendMeg() {
 // 	}
 
 // }
-func (i *notifyServer) GetSystemTempMap() syncmap.Map {
-	return i.SystemTempMap
+func (i *notifyServer) GetSystemTempMap() *sync.Map {
+	return &i.SystemTempMap
 }
 
 func NewNotifyService(db *gorm.DB) NotifyServer {
-	return &notifyServer{db: db, SystemTempMap: syncmap.Map{}}
+	return &notifyServer{db: db}
 }

@@ -20,6 +20,7 @@ import (
 	"github.com/deepmap/oapi-codegen/pkg/middleware"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/openapi3filter"
+	echojwt "github.com/labstack/echo-jwt/v4"
 	"github.com/labstack/echo/v4"
 	echo_middleware "github.com/labstack/echo/v4/middleware"
 )
@@ -68,12 +69,12 @@ func InitV2Router() http.Handler {
 
 	e.Use(echo_middleware.Logger())
 
-	e.Use(echo_middleware.JWTWithConfig(echo_middleware.JWTConfig{
+	e.Use(echojwt.WithConfig(echojwt.Config{
 		Skipper: func(c echo.Context) bool {
 			return c.RealIP() == "::1" || c.RealIP() == "127.0.0.1"
 			// return true
 		},
-		ParseTokenFunc: func(token string, c echo.Context) (interface{}, error) {
+		ParseTokenFunc: func(c echo.Context, token string) (interface{}, error) {
 			valid, claims, err := jwt.Validate(token, func() (*ecdsa.PublicKey, error) { return external.GetPublicKey(config.CommonInfo.RuntimePath) })
 			if err != nil || !valid {
 				return nil, echo.ErrUnauthorized
@@ -235,16 +236,6 @@ func InitDir() http.Handler {
 			return
 		}
 
-		err = ar.Create(w)
-		if err != nil {
-			//  return ctx.JSON(common_err.SERVICE_ERROR, model.Result{
-			// 	Success: common_err.SERVICE_ERROR,
-			// 	Message: common_err.GetMsg(common_err.SERVICE_ERROR),
-			// 	Data:    err.Error(),
-			// })
-			return
-		}
-		defer ar.Close()
 		commonDir := file.CommonPrefix(filepath.Separator, list...)
 
 		currentPath := filepath.Base(commonDir)
@@ -257,6 +248,9 @@ func InitDir() http.Handler {
 			if err != nil {
 				log.Printf("Failed to archive %s: %v", fname, err)
 			}
+		}
+		if err := ar.WriteTo(r.Context(), w); err != nil {
+			log.Printf("Failed to write archive: %v", err)
 		}
 	})
 }
