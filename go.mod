@@ -7,7 +7,6 @@ require (
 	github.com/IceWhaleTech/CasaOS-Common v0.4.21
 	github.com/coreos/go-systemd v0.0.0-20191104093116-d3cd4ed1dbcf
 	github.com/deckarep/golang-set/v2 v2.9.0
-	github.com/deepmap/oapi-codegen v1.16.3
 	github.com/disintegration/imaging v1.6.2
 	github.com/dsoprea/go-exif/v3 v3.0.1
 	github.com/getkin/kin-openapi v0.149.0
@@ -29,6 +28,7 @@ require (
 	github.com/mileusna/useragent v1.3.5
 	github.com/moby/sys/mount v0.3.5
 	github.com/moby/sys/mountinfo v0.7.2
+	github.com/oapi-codegen/echo-middleware v1.1.0
 	github.com/oapi-codegen/runtime v1.7.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1

@@ -17,7 +17,7 @@ import (
 	"github.com/IceWhaleTech/CasaOS-Common/external"
 	"github.com/IceWhaleTech/CasaOS-Common/utils/jwt"
 	v2Route "github.com/IceWhaleTech/CasaOS/route/v2"
-	"github.com/deepmap/oapi-codegen/pkg/middleware"
+	middleware "github.com/oapi-codegen/echo-middleware"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/openapi3filter"
 	echojwt "github.com/labstack/echo-jwt/v4"
@@ -123,6 +123,8 @@ func InitV2Router() http.Handler {
 			return strings.Contains(c.Request().Header.Get(echo.HeaderContentType), "multipart/form-data")
 		},
 		Options: openapi3filter.Options{AuthenticationFunc: openapi3filter.NoopAuthenticationFunc},
+		// servers only holds the relative base path, so there is no Host header to validate
+		SilenceServersWarning: true,
 	}))
 
 	codegen.RegisterHandlersWithBaseURL(e, appManagement, V2APIPath)
