@@ -1,8 +1,10 @@
 package file
 
 import (
+	"archive/zip"
 	"bufio"
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -17,7 +19,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/mholt/archiver/v3"
+	"github.com/mholt/archives"
 )
 
 // GetSize get the file size
@@ -409,28 +411,44 @@ func SpliceFiles(dir, path string, length int, startPoint int) error {
 	return nil
 }
 
-func GetCompressionAlgorithm(t string) (string, archiver.Writer, error) {
+// Archive collects files and streams them out in a single archive format.
+type Archive struct {
+	format archives.Archiver
+	files  []archives.FileInfo
+}
+
+func GetCompressionAlgorithm(t string) (string, *Archive, error) {
+	var format interface {
+		archives.Archiver
+		Extension() string
+	}
 	switch t {
 	case "zip", "":
-		return ".zip", archiver.NewZip(), nil
+		format = archives.Zip{Compression: zip.Deflate, SelectiveCompression: true}
 	case "tar":
-		return ".tar", archiver.NewTar(), nil
+		format = archives.Tar{}
 	case "targz":
-		return ".tar.gz", archiver.NewTarGz(), nil
+		format = archives.CompressedArchive{Archival: archives.Tar{}, Compression: archives.Gz{}}
 	case "tarbz2":
-		return ".tar.bz2", archiver.NewTarBz2(), nil
+		format = archives.CompressedArchive{Archival: archives.Tar{}, Compression: archives.Bz2{}}
 	case "tarxz":
-		return ".tar.xz", archiver.NewTarXz(), nil
+		format = archives.CompressedArchive{Archival: archives.Tar{}, Compression: archives.Xz{}}
 	case "tarlz4":
-		return ".tar.lz4", archiver.NewTarLz4(), nil
+		format = archives.CompressedArchive{Archival: archives.Tar{}, Compression: archives.Lz4{}}
 	case "tarsz":
-		return ".tar.sz", archiver.NewTarSz(), nil
+		format = archives.CompressedArchive{Archival: archives.Tar{}, Compression: archives.Sz{}}
 	default:
 		return "", nil, errors.New("format not implemented")
 	}
+	return format.Extension(), &Archive{format: format}, nil
 }
 
-func AddFile(ar archiver.Writer, path, commonPath string) error {
+// WriteTo streams every file added with AddFile to w.
+func (a *Archive) WriteTo(ctx context.Context, w io.Writer) error {
+	return a.format.Archive(ctx, w, a.files)
+}
+
+func AddFile(ar *Archive, path, commonPath string) error {
 	info, err := os.Stat(path)
 	if err != nil {
 		return err
@@ -440,36 +458,24 @@ func AddFile(ar archiver.Writer, path, commonPath string) error {
 		return nil
 	}
 
-	file, err := os.Open(path)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
 	if path != commonPath {
-		//filename := info.Name()
 		filename := strings.TrimPrefix(path, commonPath)
 		filename = strings.TrimPrefix(filename, string(filepath.Separator))
-		err = ar.Write(archiver.File{
-			FileInfo: archiver.FileInfo{
-				FileInfo:   info,
-				CustomName: filename,
-			},
-			ReadCloser: file,
+		ar.files = append(ar.files, archives.FileInfo{
+			FileInfo:      info,
+			NameInArchive: filepath.ToSlash(filename),
+			Open:          func() (fs.File, error) { return os.Open(path) },
 		})
-		if err != nil {
-			return err
-		}
 	}
 
 	if info.IsDir() {
-		names, err := file.Readdirnames(0)
+		entries, err := os.ReadDir(path)
 		if err != nil {
 			return err
 		}
 
-		for _, name := range names {
-			err = AddFile(ar, filepath.Join(path, name), commonPath)
+		for _, entry := range entries {
+			err = AddFile(ar, filepath.Join(path, entry.Name()), commonPath)
 			if err != nil {
 				log.Printf("Failed to archive %v", err)
 			}

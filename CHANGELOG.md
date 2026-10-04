@@ -9,12 +9,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- [Test] Round-trip test for every folder-download archive format
+
 ### Changed
 
+- [Build] Go 1.27; all Go dependencies updated to their 2026 releases
+- [Build] `github.com/deepmap/oapi-codegen` replaced by `github.com/oapi-codegen/oapi-codegen/v2`, `github.com/golang/mock` by `go.uber.org/mock`, `github.com/mholt/archiver/v3` by `github.com/mholt/archives`, `gopsutil/v3` by `gopsutil/v4`, `go-github/v36` by `go-github/v92`
+- [Build] JWT middleware moved to `labstack/echo-jwt/v4` (echo 4.16 no longer ships one)
+- [Build] GoReleaser configuration migrated to schema version 2; releases go to the repository the tag is pushed to
+- [Build] GitHub Actions updated to current major versions; archived actions replaced
+- [SDK] TypeScript 7, `@types/node` 26, `openapi-generator-cli` 2.41, `axios` 1.20
+- [Docker] `helper.sh` reads the data root with `docker info --format` and merges `data-root` into an existing `daemon.json` instead of overwriting it
+
+### Fixed
+
+- [Docker] The uninstall cleanup script failed to stop, remove, or delete anything when more than one container or image existed
+- [Docker] `PackageDocker` moved the target directory away before mounting onto it and lost file ownership when copying the data root
+- [System] Notify service copied a `sync.Map` on every read
 
 ### Removed
 
 ### Security
+
+- `golang.org/x/crypto`, `golang.org/x/net`, `golang.org/x/oauth2` and `echo` upgraded past published advisories
 
 ## [0.4.3]
 

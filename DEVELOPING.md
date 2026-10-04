@@ -13,9 +13,10 @@ In this section we will walk you through the general process of setting up your 
 
 ### Pre-requisites
 The following must be installed in order to get started. The details of how to install them is outside the scope of this doc, but generally they should be able to be installed with your systems package manager (apt, yum, brew, choco, etc).
-- Go > v1.17.0
+- Go 1.27 or newer
 - yarn
-- node.js
+- node.js 22 or newer
+- Docker Engine 29 or newer (with the Compose plugin) to run apps
 
 ### 1. Fork the Repo
 [Fork the repo](https://docs.github.com/en/get-started/quickstart/fork-a-repo) onto your own GitHub account for developing.  
@@ -30,4 +31,4 @@ The following must be installed in order to get started. The details of how to i
 2. `yarn install`
 3. `yarn build`
 4. `cd ..`
-5. `go get`  
+5. `go mod download`

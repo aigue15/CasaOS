@@ -197,15 +197,6 @@ func GetDownloadFile(ctx echo.Context) error {
 		})
 	}
 
-	err = ar.Create(ctx.Response().Writer)
-	if err != nil {
-		return ctx.JSON(common_err.SERVICE_ERROR, model.Result{
-			Success: common_err.SERVICE_ERROR,
-			Message: common_err.GetMsg(common_err.SERVICE_ERROR),
-			Data:    err.Error(),
-		})
-	}
-	defer ar.Close()
 	commonDir := file.CommonPrefix(filepath.Separator, list...)
 
 	currentPath := filepath.Base(commonDir)
@@ -219,7 +210,7 @@ func GetDownloadFile(ctx echo.Context) error {
 			log.Printf("Failed to archive %s: %v", fname, err)
 		}
 	}
-	return nil
+	return ar.WriteTo(ctx.Request().Context(), ctx.Response().Writer)
 }
 
 func GetDownloadSingleFile(ctx echo.Context) error {
